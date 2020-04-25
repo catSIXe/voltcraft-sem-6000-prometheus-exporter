@@ -34,11 +34,11 @@ const sem6000_power_measurement_powerfactor = new Prometheus.Gauge({
   name: 'sem6000_power_measurement_powerfactor',
   help: 'The Voltcraft Smartmeter Powerfactor',
 })
-const sem6000_power_measurement_total = new Prometheus.Gauge({
+/*const sem6000_power_measurement_total = new Prometheus.Gauge({
   name: 'sem6000_power_measurement_total',
   help: 'The Voltcraft Smartmeter Total Consumption',
   //labelNames: ['voltage', 'ampere', 'watt', 'frequency', 'powerfactor', 'total'],
-})
+})*/
 
 async function main() {
   const source = spawn('expect', ['./voltcraft-sem-6000/sem-6000.exp', 'Voltcraft', '--measure'], {stdio: ['ignore', 'pipe', process.stderr]})
@@ -58,7 +58,7 @@ async function echoReadable(readable) {
     lastMeasurement.watt = parseFloat(data[4])
     lastMeasurement.freq = parseInt(data[5])
     lastMeasurement.powerFactor = parseFloat(data[6])
-    lastMeasurement.total = parseFloat(data[7])
+//    lastMeasurement.total = parseFloat(data[7])
     //console.log(lastMeasurement)
 
     sem6000_power_measurement_voltage.set(lastMeasurement.volt)
@@ -66,7 +66,7 @@ async function echoReadable(readable) {
     sem6000_power_measurement_watt.set(lastMeasurement.watt)
     sem6000_power_measurement_frequency.set(lastMeasurement.freq)
     sem6000_power_measurement_powerfactor.set(lastMeasurement.powerFactor)
-    sem6000_power_measurement_total.set(lastMeasurement.total)
+//    sem6000_power_measurement_total.set(lastMeasurement.total)
 	}
 }
 
