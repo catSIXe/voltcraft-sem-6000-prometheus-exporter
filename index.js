@@ -35,7 +35,7 @@ const sem6000_power_measurement_powerfactor = new Prometheus.Gauge({
 const sem6000_power_measurement_total = new Prometheus.Gauge({
   name: 'sem6000_power_measurement_total',
   help: 'The Voltcraft Smartmeter Total Consumption',
-  labelNames: ['total', 'hour', 'day', 'month'],
+  labelNames: ['total', 'year', 'hour', 'month', 'dayOfMonth', 'dayOfWeek' ],
 })
 
 async function main() {
@@ -61,7 +61,8 @@ const powerData = {
   monthly: {},
 }
 const calculateTotalPowerUsageThisYear = (powerData) => {
-  const isoNow =  new Date().toISOString()
+  const now = new Date()
+  const isoNow =  now.toISOString()
   const currentYear = isoNow.split('T')[0].split('-').splice(0, 1).join('-')
   const currentMonthly = isoNow.split('T')[0].split('-').splice(0, 2).join('-')
   const currentDaily = isoNow.split('T')[0].split('-').splice(0, 3).join('-')
@@ -109,7 +110,12 @@ const calculateTotalPowerUsageThisYear = (powerData) => {
     return total + (powerData.hourly[curr] * (curr.indexOf(currentDaily) === 0) )
   }, 0)
   // alle 3 Werte addieren
-  return allYearButNowMonthly_C_O_N_S_U_M_E + allMonthButNowDaily_C_O_N_S_U_M_E + allDailyHourly_C_O_N_S_U_M_E
+  return {
+    totalYear: allYearButNowMonthly_C_O_N_S_U_M_E + allMonthButNowDaily_C_O_N_S_U_M_E + allDailyHourly_C_O_N_S_U_M_E,
+    totalThisMonth: allMonthButNowDaily_C_O_N_S_U_M_E + allDailyHourly_C_O_N_S_U_M_E,
+    today: allDailyHourly_C_O_N_S_U_M_E,
+    now,
+  }
 }
 async function echoReadable(readable) {
 	for await (const line of chunksToLinesAsync(readable)) {
@@ -138,9 +144,23 @@ async function echoReadable(readable) {
       if (data0.indexOf('Timestamp') > -1) {
         fetchState = FETCH_STATE.MEASURE
         // console.log('switched to measure')
+        const res = calculateTotalPowerUsageThisYear(powerData)
         sem6000_power_measurement_total.set({
-          total: 1
-        }, calculateTotalPowerUsageThisYear(powerData))
+          total: 1,
+          year: res.now.getFullYear(),
+        }, res.totalYear)
+        sem6000_power_measurement_total.set({
+          total: 2,
+          year: res.now.getFullYear(),
+          month: res.now.getMonth(),
+        }, res.totalThisMonth)
+        sem6000_power_measurement_total.set({
+          total: 3,
+          year: res.now.getFullYear(),
+          month: res.now.getMonth(),
+          dayOfMonth: res.now.getDate(),
+          dayOfWeek: res.now.getDay(),
+        }, res.today)
       } else {
         let data = data0.split('\t')
         //console.log(data)
